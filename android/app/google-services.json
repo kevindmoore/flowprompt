@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1088673048564",
+    "project_id": "flowprompt-cb09c",
+    "storage_bucket": "flowprompt-cb09c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1088673048564:android:96f198cdf7ab090ad67ba1",
+        "android_client_info": {
+          "package_name": "com.mastertechsoftware.flowprompt"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCYPOcGK6tLiAfL3oWPbPGqwWrmipy0sxI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
