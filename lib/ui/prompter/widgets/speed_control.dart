@@ -13,32 +13,41 @@ class SpeedControl extends StatelessWidget {
   Widget build(BuildContext context) {
     final speed = scrollSpeed.watch(context);
 
-    return Row(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        // Slower button
-        IconButton(
-          icon: const Icon(Icons.remove_circle_outline, color: Colors.white),
-          onPressed: speed > 10
-              ? () {
-                  onInteraction();
-                  Services.preferences.saveScrollSpeed(
-                    (speed - 10).clamp(10, 200),
-                  );
-                }
-              : null,
-          tooltip: 'Slower',
+        Text(
+          'Speed: ${speed.round()} px/s',
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-
-        // Speed slider
-        Expanded(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Speed: ${speed.round()} px/s',
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Slower button
+            IconButton(
+              icon: const Icon(
+                Icons.remove_circle_outline,
+                color: Colors.white,
               ),
-              SliderTheme(
+              iconSize: 36,
+              onPressed: speed > 5
+                  ? () {
+                      onInteraction();
+                      Services.preferences.saveScrollSpeed(
+                        (speed - 2).clamp(5, 100),
+                      );
+                    }
+                  : null,
+              tooltip: 'Slower',
+            ),
+
+            // Speed slider
+            Expanded(
+              child: SliderTheme(
                 data: SliderThemeData(
                   activeTrackColor: Colors.white70,
                   inactiveTrackColor: Colors.white24,
@@ -50,9 +59,9 @@ class SpeedControl extends StatelessWidget {
                   ),
                 ),
                 child: Slider(
-                  value: speed,
-                  min: 10,
-                  max: 200,
+                  value: speed.clamp(5, 100),
+                  min: 5,
+                  max: 100,
                   divisions: 19,
                   onChanged: (value) {
                     onInteraction();
@@ -60,22 +69,26 @@ class SpeedControl extends StatelessWidget {
                   },
                 ),
               ),
-            ],
-          ),
-        ),
+            ),
 
-        // Faster button
-        IconButton(
-          icon: const Icon(Icons.add_circle_outline, color: Colors.white),
-          onPressed: speed < 200
-              ? () {
-                  onInteraction();
-                  Services.preferences.saveScrollSpeed(
-                    (speed + 10).clamp(10, 200),
-                  );
-                }
-              : null,
-          tooltip: 'Faster',
+            // Faster button
+            IconButton(
+              icon: const Icon(
+                Icons.add_circle_outline,
+                color: Colors.white,
+              ),
+              iconSize: 36,
+              onPressed: speed < 100
+                  ? () {
+                      onInteraction();
+                      Services.preferences.saveScrollSpeed(
+                        (speed + 2).clamp(5, 100),
+                      );
+                    }
+                  : null,
+              tooltip: 'Faster',
+            ),
+          ],
         ),
       ],
     );

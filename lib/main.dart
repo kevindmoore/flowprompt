@@ -17,6 +17,7 @@ void main() async {
   // Initialize logging
   putLumberdashToWork(withClients: [ColorizeLumberdash()]);
 
+  SignalsObserver.instance = null;
   // Initialize shared preferences and services
   final prefs = await SharedPreferences.getInstance();
   Services.preferences = PreferencesService(prefs);

@@ -115,9 +115,9 @@ class SettingsScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Slider(
-                value: currentSpeed,
-                min: 10,
-                max: 200,
+                value: currentSpeed.clamp(5, 100),
+                min: 5,
+                max: 100,
                 divisions: 19,
                 label: '${currentSpeed.round()}',
                 onChanged: (value) =>

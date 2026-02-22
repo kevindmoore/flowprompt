@@ -8,7 +8,7 @@
 PRODUCT_NAME = flowprompt
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = --orgcom.mastertechsoftware.flowprompt
+PRODUCT_BUNDLE_IDENTIFIER = com.mastertechsoftware.flowprompt
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2026 --org=com.mastertechsoftware.flowprompt. All rights reserved.

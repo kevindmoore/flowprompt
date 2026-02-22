@@ -127,6 +127,17 @@ class _TopBar extends StatelessWidget {
                   : null,
               tooltip: 'Increase font size',
             ),
+            // Mirror button
+            IconButton(
+              icon: Icon(
+                isMirrored.watch(context) ? Icons.flip : Icons.flip_outlined,
+                color: Colors.white,
+              ),
+              onPressed: () {
+                isMirrored.value = !isMirrored.value;
+              },
+              tooltip: 'Mirror Text',
+            ),
           ],
         ),
       ),

@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:signals/signals_flutter.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
@@ -31,9 +33,10 @@ class _PrompterScreenState extends State<PrompterScreen>
   Timer? _hideControlsTimer;
   bool _countdownActive = false;
   int _countdownValue = 3;
-  double _progress = 0.0;
+  final _progress = ValueNotifier<double>(0.0);
   double _pdfScrollY = 0.0;
   int _pdfPageCount = 0;
+  bool _userIsTouching = false;
 
   @override
   void initState() {
@@ -55,6 +58,7 @@ class _PrompterScreenState extends State<PrompterScreen>
     _scrollController.dispose();
     _pdfController.dispose();
     _hideControlsTimer?.cancel();
+    _progress.dispose();
     WakelockPlus.disable();
 
     // Restore system UI
@@ -66,7 +70,7 @@ class _PrompterScreenState extends State<PrompterScreen>
   bool get _isPdf => scriptFileType.value == ScriptFileType.pdf;
 
   void _onTick(Duration elapsed) {
-    if (!isScrolling.value || _countdownActive) {
+    if (!isScrolling.value || _countdownActive || _userIsTouching) {
       _lastTickTime = elapsed;
       return;
     }
@@ -90,10 +94,10 @@ class _PrompterScreenState extends State<PrompterScreen>
       if (newOffset >= maxScroll) {
         _scrollController.jumpTo(maxScroll);
         isScrolling.value = false;
-        setState(() => _progress = 1.0);
+        _progress.value = 1.0;
       } else {
         _scrollController.jumpTo(newOffset);
-        setState(() => _progress = maxScroll > 0 ? newOffset / maxScroll : 0.0);
+        _progress.value = maxScroll > 0 ? newOffset / maxScroll : 0.0;
       }
     }
   }
@@ -108,15 +112,13 @@ class _PrompterScreenState extends State<PrompterScreen>
     if (_pdfScrollY > 0 && (actualY - prevY).abs() < 0.1 && actualY > 0) {
       _pdfScrollY = actualY;
       isScrolling.value = false;
-      setState(() => _progress = 1.0);
+      _progress.value = 1.0;
       return;
     }
 
     // Update progress based on page number
     if (_pdfPageCount > 0) {
-      setState(() {
-        _progress = (_pdfController.pageNumber) / _pdfPageCount;
-      });
+      _progress.value = (_pdfController.pageNumber) / _pdfPageCount;
     }
   }
 
@@ -157,13 +159,14 @@ class _PrompterScreenState extends State<PrompterScreen>
     if (_isPdf) {
       _pdfScrollY = 0.0;
       _pdfController.jumpToPage(1);
-      setState(() => _progress = 0.0);
+      _progress.value = 0.0;
     } else if (_scrollController.hasClients) {
       _scrollController.animateTo(
         0,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
+      _progress.value = 0.0;
     }
   }
 
@@ -175,6 +178,25 @@ class _PrompterScreenState extends State<PrompterScreen>
         controlsVisible.value = false;
       }
     });
+  }
+
+  void _onPointerDown(PointerDownEvent _) {
+    _userIsTouching = true;
+  }
+
+  void _onPointerUp(PointerUpEvent _) {
+    _userIsTouching = false;
+    // Sync auto-scroll position to wherever the user scrolled
+    if (_isPdf) {
+      _pdfScrollY = _pdfController.scrollOffset.dy;
+    }
+  }
+
+  void _onPointerCancel(PointerCancelEvent _) {
+    _userIsTouching = false;
+    if (_isPdf) {
+      _pdfScrollY = _pdfController.scrollOffset.dy;
+    }
   }
 
   void _onTapContent() {
@@ -195,6 +217,7 @@ class _PrompterScreenState extends State<PrompterScreen>
     final currentFontFamily = fontFamily.watch(context);
     final dark = isDarkMode.watch(context);
     final showControls = controlsVisible.watch(context);
+    final mirrored = isMirrored.watch(context);
 
     final textColor = dark ? Colors.white : Colors.black;
     final bgColor = dark ? Colors.black : Colors.white;
@@ -215,14 +238,24 @@ class _PrompterScreenState extends State<PrompterScreen>
           onPanUpdate: (_) => _resetHideControlsTimer(),
           child: Stack(
             children: [
-              // Main content
-              _buildContent(
-                content,
-                fileType,
-                currentPdfBytes,
-                textStyle,
-                bgColor,
-                textColor,
+              // Main content -- wrapped in Listener to detect touch for
+              // allowing manual scroll while auto-scrolling
+              Listener(
+                onPointerDown: _onPointerDown,
+                onPointerUp: _onPointerUp,
+                onPointerCancel: _onPointerCancel,
+                child: Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.rotationY(mirrored ? math.pi : 0),
+                  child: _buildContent(
+                    content,
+                    fileType,
+                    currentPdfBytes,
+                    textStyle,
+                    bgColor,
+                    textColor,
+                  ),
+                ),
               ),
 
               // Progress bar at top
@@ -230,15 +263,20 @@ class _PrompterScreenState extends State<PrompterScreen>
                 top: 0,
                 left: 0,
                 right: 0,
-                child: LinearProgressIndicator(
-                  value: _progress,
-                  minHeight: 3,
-                  backgroundColor: Colors.transparent,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    Theme.of(
-                      context,
-                    ).colorScheme.primary.withValues(alpha: 0.7),
-                  ),
+                child: ValueListenableBuilder<double>(
+                  valueListenable: _progress,
+                  builder: (context, value, _) {
+                    return LinearProgressIndicator(
+                      value: value,
+                      minHeight: 3,
+                      backgroundColor: Colors.transparent,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.7),
+                      ),
+                    );
+                  },
                 ),
               ),
 
@@ -290,7 +328,7 @@ class _PrompterScreenState extends State<PrompterScreen>
         canShowScrollHead: false,
         canShowScrollStatus: false,
         canShowPaginationDialog: false,
-        enableDoubleTapZooming: false,
+        enableDoubleTapZooming: true,
         enableTextSelection: false,
         pageLayoutMode: PdfPageLayoutMode.continuous,
         scrollDirection: PdfScrollDirection.vertical,
@@ -300,9 +338,7 @@ class _PrompterScreenState extends State<PrompterScreen>
         },
         onPageChanged: (details) {
           if (_pdfPageCount > 0) {
-            setState(() {
-              _progress = details.newPageNumber / _pdfPageCount;
-            });
+            _progress.value = details.newPageNumber / _pdfPageCount;
           }
         },
         onTap: (details) {
@@ -361,6 +397,38 @@ class _PrompterScreenState extends State<PrompterScreen>
             color: textColor.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(8),
           ),
+        ),
+      );
+    }
+
+    if (fileType == ScriptFileType.html) {
+      // 1. Remove <style> blocks (Google Docs default styles)
+      var cleanContent = content.replaceAll(
+        RegExp(r'<style[^>]*>[\s\S]*?</style>', caseSensitive: false),
+        '',
+      );
+
+      // 2. Remove all inline 'style="..."' attributes from tags.
+      // This forces the content to use our app's font, size, and color settings,
+      // while preserving structural tags like <h1>, <b>, <i>, <ul>, etc.
+      cleanContent = cleanContent.replaceAll(
+        RegExp(r' style="[^"]*"', caseSensitive: false),
+        '',
+      );
+
+      return SingleChildScrollView(
+        controller: _scrollController,
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 80),
+        child: HtmlWidget(
+          cleanContent,
+          textStyle: textStyle,
+          // We only need to force transparency on the body/root
+          customStylesBuilder: (element) {
+            if (element.localName == 'body') {
+              return {'background-color': 'transparent'};
+            }
+            return null;
+          },
         ),
       );
     }

@@ -108,7 +108,11 @@ class HomeScreen extends StatelessWidget {
       }
 
       loaded = await Services.googleDrive.loadDriveFile(
-        DriveFileInfo(id: file.driveFileId!, name: file.name),
+        DriveFileInfo(
+          id: file.driveFileId!,
+          name: file.name,
+          mimeType: file.mimeType ?? 'application/octet-stream',
+        ),
       );
     } else {
       loaded = false;
@@ -235,6 +239,7 @@ class HomeScreen extends StatelessWidget {
                               color: switch (file.fileType) {
                                 ScriptFileType.markdown => Colors.blue,
                                 ScriptFileType.pdf => Colors.red,
+                                ScriptFileType.html => Colors.orange,
                                 ScriptFileType.text => Colors.grey,
                               },
                             ),

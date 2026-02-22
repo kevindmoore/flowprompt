@@ -20,7 +20,7 @@ final pdfBytes = signal<Uint8List?>(null);
 final isScrolling = signal<bool>(false);
 
 /// Scroll speed in pixels per second (persisted)
-final scrollSpeed = signal<double>(50.0);
+final scrollSpeed = signal<double>(30.0);
 
 /// Text font size (persisted)
 final fontSize = signal<double>(32.0);
@@ -33,6 +33,9 @@ final recentFiles = signal<List<RecentFile>>([]);
 
 /// Dark mode preference (persisted)
 final isDarkMode = signal<bool>(true);
+
+/// Whether the text is mirrored (for teleprompter glass)
+final isMirrored = signal<bool>(false);
 
 /// Overlay controls visibility
 final controlsVisible = signal<bool>(true);
@@ -52,5 +55,6 @@ void resetScript() {
   scriptFileType.value = ScriptFileType.text;
   pdfBytes.value = null;
   isScrolling.value = false;
+  isMirrored.value = false;
   controlsVisible.value = true;
 }

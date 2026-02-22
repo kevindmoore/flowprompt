@@ -2,7 +2,7 @@ import 'dart:convert';
 
 enum FileSource { local, googleDrive }
 
-enum ScriptFileType { text, markdown, pdf }
+enum ScriptFileType { text, markdown, pdf, html }
 
 class RecentFile {
   const RecentFile({
@@ -11,6 +11,7 @@ class RecentFile {
     required this.source,
     required this.fileType,
     this.driveFileId,
+    this.mimeType,
   });
 
   final String name;
@@ -18,6 +19,7 @@ class RecentFile {
   final FileSource source;
   final ScriptFileType fileType;
   final String? driveFileId;
+  final String? mimeType;
 
   String get sourceLabel => source == FileSource.local ? 'Local' : 'Drive';
 
@@ -28,6 +30,7 @@ class RecentFile {
       case ScriptFileType.pdf:
         return '📕';
       case ScriptFileType.text:
+      case ScriptFileType.html:
         return '📄';
     }
   }
@@ -38,6 +41,7 @@ class RecentFile {
     'source': source.name,
     'fileType': fileType.name,
     'driveFileId': driveFileId,
+    'mimeType': mimeType,
   };
 
   factory RecentFile.fromJson(Map<String, dynamic> json) => RecentFile(
@@ -46,6 +50,7 @@ class RecentFile {
     source: FileSource.values.byName(json['source'] as String),
     fileType: ScriptFileType.values.byName(json['fileType'] as String),
     driveFileId: json['driveFileId'] as String?,
+    mimeType: json['mimeType'] as String?,
   );
 
   static String encodeList(List<RecentFile> files) =>

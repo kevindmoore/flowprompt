@@ -17,7 +17,7 @@ class PreferencesService {
 
   /// Load all persisted settings into signals
   void loadSettings() {
-    scrollSpeed.value = _prefs.getDouble(_keyScrollSpeed) ?? 50.0;
+    scrollSpeed.value = _prefs.getDouble(_keyScrollSpeed) ?? 30.0;
     fontSize.value = _prefs.getDouble(_keyFontSize) ?? 32.0;
     fontFamily.value = _prefs.getString(_keyFontFamily) ?? 'Roboto Slab';
     isDarkMode.value = _prefs.getBool(_keyDarkMode) ?? true;

@@ -15,14 +15,20 @@ class DriveFileInfo {
   const DriveFileInfo({
     required this.id,
     required this.name,
+    required this.mimeType,
     this.modifiedTime,
   });
 
   final String id;
   final String name;
+  final String mimeType;
   final DateTime? modifiedTime;
 
   ScriptFileType get fileType {
+    if (mimeType == 'application/vnd.google-apps.document') {
+      return ScriptFileType.html;
+    }
+    
     final lower = name.toLowerCase();
     if (lower.endsWith('.md')) return ScriptFileType.markdown;
     if (lower.endsWith('.pdf')) return ScriptFileType.pdf;
@@ -111,7 +117,7 @@ class GoogleDriveService {
     return drive.DriveApi(authClient);
   }
 
-  /// List .txt and .md files from Google Drive
+  /// List .txt, .md, .pdf and Google Docs from Google Drive
   Future<List<DriveFileInfo>> listTextFiles() async {
     try {
       final driveApi = await _getDriveApi();
@@ -120,8 +126,9 @@ class GoogleDriveService {
         return [];
       }
 
-      // Query broadly for text-like and PDF files, then filter client-side by extension.
+      // Query broadly for text-like, PDF files, and Google Docs
       const query = "trashed=false and ("
+          "mimeType='application/vnd.google-apps.document' or "
           "mimeType='text/plain' or "
           "mimeType='text/markdown' or "
           "mimeType='text/x-markdown' or "
@@ -154,12 +161,14 @@ class GoogleDriveService {
         );
       }
 
-      // Filter to only .txt, .md, and .pdf extensions
+      // Filter
       final filtered = files
           .where(
             (f) =>
                 f.name != null &&
-                (f.name!.endsWith('.txt') ||
+                f.mimeType != null &&
+                (f.mimeType == 'application/vnd.google-apps.document' ||
+                    f.name!.endsWith('.txt') ||
                     f.name!.endsWith('.md') ||
                     f.name!.endsWith('.pdf')),
           )
@@ -167,12 +176,13 @@ class GoogleDriveService {
             (f) => DriveFileInfo(
               id: f.id!,
               name: f.name!,
+              mimeType: f.mimeType!,
               modifiedTime: f.modifiedTime,
             ),
           )
           .toList();
 
-      logMessage('GoogleDriveService: Found ${filtered.length} text files after filtering');
+      logMessage('GoogleDriveService: Found ${filtered.length} files after filtering');
       return filtered;
     } catch (e) {
       logWarning('GoogleDriveService: Error listing files: $e');
@@ -180,18 +190,28 @@ class GoogleDriveService {
     }
   }
 
-  /// Download raw file bytes from Google Drive
-  Future<Uint8List?> _downloadFileBytes(String fileId) async {
+  /// Download file bytes. Exports Google Docs to plain text.
+  Future<Uint8List?> _downloadFileBytes(String fileId, String mimeType) async {
     try {
       final driveApi = await _getDriveApi();
       if (driveApi == null) return null;
 
-      final media =
-          await driveApi.files.get(
-                fileId,
-                downloadOptions: drive.DownloadOptions.fullMedia,
-              )
-              as drive.Media;
+      drive.Media media;
+      
+      if (mimeType == 'application/vnd.google-apps.document') {
+         // Export Google Docs to HTML
+         media = await driveApi.files.export(
+            fileId,
+            'text/html',
+            downloadOptions: drive.DownloadOptions.fullMedia,
+         ) as drive.Media;
+      } else {
+        // Download regular files directly
+        media = await driveApi.files.get(
+              fileId,
+              downloadOptions: drive.DownloadOptions.fullMedia,
+            ) as drive.Media;
+      }
 
       final bytes = <int>[];
       await for (final chunk in media.stream) {
@@ -205,17 +225,10 @@ class GoogleDriveService {
     }
   }
 
-  /// Download file content as text from Google Drive
-  Future<String?> downloadFileContent(String fileId) async {
-    final bytes = await _downloadFileBytes(fileId);
-    if (bytes == null) return null;
-    return utf8.decode(bytes, allowMalformed: true);
-  }
-
   /// Load a Drive file's content into the prompter
   Future<bool> loadDriveFile(DriveFileInfo file) async {
     try {
-      final bytes = await _downloadFileBytes(file.id);
+      final bytes = await _downloadFileBytes(file.id, file.mimeType);
       if (bytes == null) return false;
 
       if (file.fileType == ScriptFileType.pdf) {
@@ -238,6 +251,7 @@ class GoogleDriveService {
           source: FileSource.googleDrive,
           fileType: file.fileType,
           driveFileId: file.id,
+          mimeType: file.mimeType,
         ),
       );
 
