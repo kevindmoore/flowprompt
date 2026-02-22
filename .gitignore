@@ -46,3 +46,7 @@ app.*.map.json
 
 # FVM Version Cache
 .fvm/
+
+# Google Services
+google-services.json
+GoogleService-Info.plist
