@@ -12,31 +12,47 @@ class PrompterControls extends StatelessWidget {
     required this.isScrolling,
     required this.onPlayPause,
     required this.onResetToTop,
+    required this.speechEnabled,
+    required this.speechActive,
+    required this.speechListening,
+    required this.onToggleSpeech,
     required this.onBack,
     required this.onInteraction,
   });
 
   final String fileName;
   final bool isScrolling;
+  final bool speechEnabled;
+  final bool speechActive;
+  final bool speechListening;
   final VoidCallback onPlayPause;
   final VoidCallback onResetToTop;
+  final VoidCallback onToggleSpeech;
   final VoidCallback onBack;
   final VoidCallback onInteraction;
 
   @override
   Widget build(BuildContext context) {
-    final currentFontSize = fontSize.watch(context);
-
     return Column(
       children: [
         // Top bar: back button, file name, font controls
-        _TopBar(
-          fileName: fileName,
-          currentFontSize: currentFontSize,
-          onBack: onBack,
-          onFontSizeChanged: (size) {
-            onInteraction();
-            Services.preferences.saveFontSize(size);
+        SignalBuilder(
+          builder: (context) {
+            final currentFontSize = fontSize.value;
+
+            return _TopBar(
+              fileName: fileName,
+              currentFontSize: currentFontSize,
+              speechEnabled: speechEnabled,
+              speechActive: speechActive,
+              speechListening: speechListening,
+              onToggleSpeech: onToggleSpeech,
+              onBack: onBack,
+              onFontSizeChanged: (size) {
+                onInteraction();
+                Services.preferences.saveFontSize(size);
+              },
+            );
           },
         ),
 
@@ -55,6 +71,7 @@ class PrompterControls extends StatelessWidget {
 
         // Bottom: Speed control and reset
         _BottomBar(
+          speechListening: speechListening,
           onResetToTop: () {
             onInteraction();
             onResetToTop();
@@ -70,17 +87,29 @@ class _TopBar extends StatelessWidget {
   const _TopBar({
     required this.fileName,
     required this.currentFontSize,
+    required this.speechEnabled,
+    required this.speechActive,
+    required this.speechListening,
+    required this.onToggleSpeech,
     required this.onBack,
     required this.onFontSizeChanged,
   });
 
   final String fileName;
   final double currentFontSize;
+  final bool speechEnabled;
+  final bool speechActive;
+  final bool speechListening;
+  final VoidCallback onToggleSpeech;
   final VoidCallback onBack;
   final ValueChanged<double> onFontSizeChanged;
 
   @override
   Widget build(BuildContext context) {
+    final speechColor = speechEnabled && speechActive
+        ? _speechColor(listening: speechListening)
+        : Colors.white54;
+
     return Container(
       padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
       decoration: const BoxDecoration(
@@ -108,6 +137,20 @@ class _TopBar extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
+            IconButton(
+              icon: Icon(
+                speechEnabled && speechActive
+                    ? (speechListening ? Icons.mic : Icons.mic_none)
+                    : Icons.mic_off,
+                color: speechColor,
+              ),
+              onPressed: onToggleSpeech,
+              tooltip: !speechEnabled
+                  ? 'Turn on speech follow'
+                  : speechActive
+                      ? 'Turn off speech follow'
+                      : 'Speech follow ready — starts with Play',
+            ),
             // Font size controls
             IconButton(
               icon: const Icon(Icons.text_decrease, color: Colors.white),
@@ -128,15 +171,17 @@ class _TopBar extends StatelessWidget {
               tooltip: 'Increase font size',
             ),
             // Mirror button
-            IconButton(
-              icon: Icon(
-                isMirrored.watch(context) ? Icons.flip : Icons.flip_outlined,
-                color: Colors.white,
+            SignalBuilder(
+              builder: (context) => IconButton(
+                icon: Icon(
+                  isMirrored.value ? Icons.flip : Icons.flip_outlined,
+                  color: Colors.white,
+                ),
+                onPressed: () {
+                  isMirrored.value = !isMirrored.value;
+                },
+                tooltip: 'Mirror Text',
               ),
-              onPressed: () {
-                isMirrored.value = !isMirrored.value;
-              },
-              tooltip: 'Mirror Text',
             ),
           ],
         ),
@@ -174,8 +219,13 @@ class _PlayPauseButton extends StatelessWidget {
 }
 
 class _BottomBar extends StatelessWidget {
-  const _BottomBar({required this.onResetToTop, required this.onInteraction});
+  const _BottomBar({
+    required this.speechListening,
+    required this.onResetToTop,
+    required this.onInteraction,
+  });
 
+  final bool speechListening;
   final VoidCallback onResetToTop;
   final VoidCallback onInteraction;
 
@@ -218,4 +268,8 @@ class _BottomBar extends StatelessWidget {
       ),
     );
   }
+}
+
+Color _speechColor({required bool listening}) {
+  return listening ? Colors.greenAccent : Colors.redAccent;
 }

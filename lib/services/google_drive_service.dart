@@ -70,13 +70,10 @@ class GoogleDriveService {
   /// Sign in to Google
   Future<bool> signIn() async {
     try {
-      logMessage('GoogleDriveService: Starting sign in...');
       final account = await _googleSignIn.signIn();
       final signedIn = account != null;
       isSignedInToGoogle.value = signedIn;
-      if (signedIn) {
-        logMessage('GoogleDriveService: Signed in as ${account.email}');
-      } else {
+      if (!signedIn) {
         logWarning('GoogleDriveService: Sign in returned null (user cancelled?)');
       }
       return signedIn;
@@ -95,7 +92,6 @@ class GoogleDriveService {
   Future<void> signOut() async {
     await _googleSignIn.signOut();
     isSignedInToGoogle.value = false;
-    logMessage('GoogleDriveService: Signed out');
   }
 
   /// Get the current signed-in user's email
@@ -139,7 +135,6 @@ class GoogleDriveService {
           "name contains '.pdf'"
           ")";
 
-      logMessage('GoogleDriveService: Querying Drive with: $query');
 
       final fileList = await driveApi.files.list(
         q: query,
@@ -150,16 +145,6 @@ class GoogleDriveService {
       );
 
       final files = fileList.files ?? [];
-      logMessage(
-        'GoogleDriveService: Drive returned ${files.length} files before filtering',
-      );
-
-      // Log first few results for debugging
-      for (final f in files.take(5)) {
-        logMessage(
-          '  -> "${f.name}" (mimeType: ${f.mimeType})',
-        );
-      }
 
       // Filter
       final filtered = files
@@ -182,7 +167,6 @@ class GoogleDriveService {
           )
           .toList();
 
-      logMessage('GoogleDriveService: Found ${filtered.length} files after filtering');
       return filtered;
     } catch (e) {
       logWarning('GoogleDriveService: Error listing files: $e');
@@ -255,9 +239,6 @@ class GoogleDriveService {
         ),
       );
 
-      logMessage(
-        'GoogleDriveService: Loaded "${file.name}" (${bytes.length} bytes)',
-      );
       return true;
     } catch (e) {
       logWarning('GoogleDriveService: Error loading file: $e');

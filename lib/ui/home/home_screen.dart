@@ -20,7 +20,10 @@ class HomeScreen extends StatelessWidget {
     }
   }
 
-  Future<void> _openFromGoogleDrive(BuildContext context) async {
+  Future<void> _openFromGoogleDrive(
+    BuildContext context, {
+    bool googleDocsOnly = false,
+  }) async {
     // Ensure signed in
     if (!isSignedInToGoogle.value) {
       final signedIn = await Services.googleDrive.signIn();
@@ -43,24 +46,41 @@ class HomeScreen extends StatelessWidget {
       builder: (_) => const Center(child: CircularProgressIndicator()),
     );
 
-    final files = await Services.googleDrive.listTextFiles();
+    final driveFiles = await Services.googleDrive.listTextFiles();
+    final files = googleDocsOnly
+        ? driveFiles
+              .where(
+                (file) =>
+                    file.mimeType == 'application/vnd.google-apps.document',
+              )
+              .toList()
+        : driveFiles;
 
     if (!context.mounted) return;
     Navigator.of(context).pop(); // Dismiss loading
 
     if (files.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No .txt or .md files found in Google Drive'),
+        SnackBar(
+          content: Text(
+            googleDocsOnly
+                ? 'No Google Docs found in Google Drive'
+                : 'No supported files found in Google Drive',
+          ),
         ),
       );
       return;
     }
 
-    // Show file picker dialog
-    final selected = await showDialog<DriveFileInfo>(
-      context: context,
-      builder: (context) => _DriveFilePicker(files: files),
+    // Show full-screen file picker
+    final selected = await Navigator.of(context).push<DriveFileInfo>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (context) => _DriveFilePicker(
+          files: files,
+          title: googleDocsOnly ? 'Google Docs' : 'Google Drive Files',
+        ),
+      ),
     );
 
     if (selected == null || !context.mounted) return;
@@ -129,9 +149,8 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final recent = recentFiles.watch(context);
-
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(
           'Flow Prompt',
@@ -196,78 +215,108 @@ class HomeScreen extends StatelessWidget {
                       textStyle: const TextStyle(fontSize: 18),
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        _openFromGoogleDrive(context, googleDocsOnly: true),
+                    icon: const Icon(Icons.description),
+                    label: const Text('Open from Google Docs'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      textStyle: const TextStyle(fontSize: 18),
+                    ),
+                  ),
 
                   const SizedBox(height: 40),
 
                   // Recent files
-                  if (recent.isNotEmpty) ...[
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Recent Files',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        TextButton.icon(
-                          onPressed: () {
-                            Services.preferences.clearRecentFiles();
-                          },
-                          icon: const Icon(Icons.clear_all, size: 18),
-                          label: const Text('Clear'),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: ListView.separated(
-                        itemCount: recent.length,
-                        separatorBuilder: (_, _) => const Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          final file = recent[index];
-                          return ListTile(
-                            leading: Icon(
-                              file.source == FileSource.googleDrive
-                                  ? Icons.cloud
-                                  : Icons.insert_drive_file,
-                              color: switch (file.fileType) {
-                                ScriptFileType.markdown => Colors.blue,
-                                ScriptFileType.pdf => Colors.red,
-                                ScriptFileType.html => Colors.orange,
-                                ScriptFileType.text => Colors.grey,
-                              },
-                            ),
-                            title: Text(
-                              file.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            subtitle: Text(file.sourceLabel),
-                            onTap: () => _openRecentFile(context, file),
-                          );
-                        },
-                      ),
-                    ),
-                  ] else
-                    Expanded(
-                      child: Center(
-                        child: Text(
-                          'Open a file to get started',
-                          style: Theme.of(context).textTheme.bodyLarge
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withValues(alpha: 0.5),
+                  SignalBuilder(
+                    builder: (context) {
+                      final recent = recentFiles.value;
+
+                      if (recent.isNotEmpty) {
+                        return Expanded(
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      'Recent Files',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
+                                  ),
+                                  TextButton.icon(
+                                    onPressed: () {
+                                      Services.preferences.clearRecentFiles();
+                                    },
+                                    icon: const Icon(Icons.clear_all, size: 18),
+                                    label: const Text('Clear'),
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
+                              const SizedBox(height: 8),
+                              Expanded(
+                                child: ListView.separated(
+                                  itemCount: recent.length,
+                                  separatorBuilder: (_, _) =>
+                                      const Divider(height: 1),
+                                  itemBuilder: (context, index) {
+                                    final file = recent[index];
+                                    return ListTile(
+                                      leading: Icon(
+                                        file.source == FileSource.googleDrive
+                                            ? Icons.cloud
+                                            : Icons.insert_drive_file,
+                                        color: switch (file.fileType) {
+                                          ScriptFileType.markdown =>
+                                            Colors.blue,
+                                          ScriptFileType.pdf => Colors.red,
+                                          ScriptFileType.html => Colors.orange,
+                                          ScriptFileType.text => Colors.grey,
+                                        },
+                                      ),
+                                      title: Text(
+                                        file.name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      subtitle: Text(file.sourceLabel),
+                                      onTap: () =>
+                                          _openRecentFile(context, file),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      return Expanded(
+                        child: Center(
+                          child: Text(
+                            'Open a file to get started',
+                            style: Theme.of(context).textTheme.bodyLarge
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.5),
+                                ),
+                          ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
@@ -278,52 +327,114 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-/// Dialog to browse and pick a file from Google Drive
-class _DriveFilePicker extends StatelessWidget {
-  const _DriveFilePicker({required this.files});
+/// Full-screen browser to pick a file from Google Drive
+class _DriveFilePicker extends StatefulWidget {
+  const _DriveFilePicker({required this.files, required this.title});
 
   final List<DriveFileInfo> files;
+  final String title;
+
+  @override
+  State<_DriveFilePicker> createState() => _DriveFilePickerState();
+}
+
+class _DriveFilePickerState extends State<_DriveFilePicker> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Google Drive Files'),
-      content: SizedBox(
-        width: double.maxFinite,
-        height: 400,
-        child: ListView.separated(
-          itemCount: files.length,
-          separatorBuilder: (_, _) => const Divider(height: 1),
-          itemBuilder: (context, index) {
-            final file = files[index];
-            final isMarkdown = file.name.endsWith('.md');
-            return ListTile(
-              leading: Icon(
-                isMarkdown ? Icons.description : Icons.text_snippet,
-                color: isMarkdown ? Colors.blue : Colors.grey,
-              ),
-              title: Text(
-                file.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              subtitle: file.modifiedTime != null
-                  ? Text(
-                      _formatDate(file.modifiedTime!),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    )
-                  : null,
-              onTap: () => Navigator.of(context).pop(file),
-            );
-          },
+    final files = _query.isEmpty
+        ? widget.files
+        : widget.files
+              .where((file) => file.name.toLowerCase().contains(_query))
+              .toList();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          tooltip: 'Cancel',
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search files',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _query.isEmpty
+                      ? null
+                      : IconButton(
+                          icon: const Icon(Icons.clear),
+                          tooltip: 'Clear search',
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _query = '');
+                          },
+                        ),
+                  border: const OutlineInputBorder(),
+                ),
+                textInputAction: TextInputAction.search,
+                onChanged: (value) {
+                  setState(() => _query = value.toLowerCase().trim());
+                },
+              ),
+            ),
+            Expanded(
+              child: files.isEmpty
+                  ? const Center(child: Text('No matching files'))
+                  : ListView.separated(
+                      itemCount: files.length,
+                      separatorBuilder: (_, _) => const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        final file = files[index];
+                        final isGoogleDoc =
+                            file.mimeType ==
+                            'application/vnd.google-apps.document';
+                        final isMarkdown = file.name.endsWith('.md');
+                        return ListTile(
+                          leading: Icon(
+                            isGoogleDoc
+                                ? Icons.description
+                                : isMarkdown
+                                ? Icons.description
+                                : Icons.text_snippet,
+                            color: isGoogleDoc || isMarkdown
+                                ? Colors.blue
+                                : Colors.grey,
+                          ),
+                          title: Text(
+                            file.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: file.modifiedTime != null
+                              ? Text(
+                                  _formatDate(file.modifiedTime!),
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                )
+                              : null,
+                          onTap: () => Navigator.of(context).pop(file),
+                        );
+                      },
+                    ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 

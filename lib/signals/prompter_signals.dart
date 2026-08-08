@@ -22,6 +22,21 @@ final isScrolling = signal<bool>(false);
 /// Scroll speed in pixels per second (persisted)
 final scrollSpeed = signal<double>(30.0);
 
+/// Live multiplier applied by speech following (not persisted)
+final speechSpeedMultiplier = signal<double>(1.0);
+
+/// Current prompter progress from top (0.0) to bottom (1.0)
+final currentPrompterProgress = signal<double>(0.0);
+
+/// Whether speech following is enabled
+final speechFollowEnabled = signal<bool>(true);
+
+/// Whether the speech recognizer is actively listening
+final speechListening = signal<bool>(false);
+
+/// Short speech-follow status text for the prompter controls
+final speechFollowStatus = signal<String>('Off');
+
 /// Text font size (persisted)
 final fontSize = signal<double>(32.0);
 
@@ -55,6 +70,11 @@ void resetScript() {
   scriptFileType.value = ScriptFileType.text;
   pdfBytes.value = null;
   isScrolling.value = false;
+  speechSpeedMultiplier.value = 1.0;
+  currentPrompterProgress.value = 0.0;
+  speechFollowEnabled.value = true;
+  speechListening.value = false;
+  speechFollowStatus.value = 'Off';
   isMirrored.value = false;
   controlsVisible.value = true;
 }

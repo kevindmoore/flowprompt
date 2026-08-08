@@ -25,7 +25,6 @@ class FileService {
       );
 
       if (result == null || result.files.isEmpty) {
-        logMessage('FileService: No file selected');
         return false;
       }
 
@@ -78,7 +77,6 @@ class FileService {
         ),
       );
 
-      logMessage('FileService: Loaded file "$name" (${bytes.length} bytes)');
       return true;
     } catch (e) {
       logWarning('FileService: Error loading file: $e');
@@ -94,19 +92,16 @@ class FileService {
         bytes[1] == 0xBB &&
         bytes[2] == 0xBF) {
       // UTF-8 BOM -- skip the 3-byte BOM and decode as UTF-8
-      logMessage('FileService: Detected UTF-8 BOM');
       return utf8.decode(bytes.sublist(3));
     }
 
     if (bytes.length >= 2 && bytes[0] == 0xFF && bytes[1] == 0xFE) {
       // UTF-16 Little Endian BOM
-      logMessage('FileService: Detected UTF-16 LE');
       return _decodeUtf16Le(bytes.sublist(2));
     }
 
     if (bytes.length >= 2 && bytes[0] == 0xFE && bytes[1] == 0xFF) {
       // UTF-16 Big Endian BOM
-      logMessage('FileService: Detected UTF-16 BE');
       return _decodeUtf16Be(bytes.sublist(2));
     }
 

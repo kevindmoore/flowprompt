@@ -27,12 +27,6 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = isDarkMode.watch(context);
-    final currentFontSize = fontSize.watch(context);
-    final currentSpeed = scrollSpeed.watch(context);
-    final currentFont = fontFamily.watch(context);
-    final signedIn = isSignedInToGoogle.watch(context);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
@@ -42,141 +36,159 @@ class SettingsScreen extends StatelessWidget {
         ),
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            // Appearance
-            const _SectionHeader(title: 'Appearance'),
-            SwitchListTile(
-              title: const Text('Dark Mode'),
-              subtitle: const Text(
-                'Dark background reduces glare for prompting',
-              ),
-              value: dark,
-              onChanged: (value) => Services.preferences.saveDarkMode(value),
-              secondary: Icon(dark ? Icons.dark_mode : Icons.light_mode),
-            ),
-            const Divider(),
+        child: SignalBuilder(
+          builder: (context) {
+            final dark = isDarkMode.value;
+            final currentFontSize = fontSize.value;
+            final currentSpeed = scrollSpeed.value;
+            final currentFont = fontFamily.value;
+            final signedIn = isSignedInToGoogle.value;
+            final recentCount = recentFiles.value.length;
 
-            // Font family
-            ListTile(
-              leading: const Icon(Icons.font_download),
-              title: const Text('Font Family'),
-              subtitle: Text(currentFont),
-              onTap: () => _showFontPicker(context, currentFont),
-            ),
-            const Divider(),
-
-            // Font size
-            ListTile(
-              leading: const Icon(Icons.format_size),
-              title: const Text('Default Font Size'),
-              subtitle: Text('${currentFontSize.round()} pt'),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Slider(
-                value: currentFontSize,
-                min: 16,
-                max: 80,
-                divisions: 16,
-                label: '${currentFontSize.round()}',
-                onChanged: (value) => Services.preferences.saveFontSize(value),
-              ),
-            ),
-
-            // Preview
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            return ListView(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: dark ? Colors.black : Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Theme.of(context).dividerColor),
-              ),
-              child: Text(
-                'The quick brown fox jumps over the lazy dog.',
-                style: GoogleFonts.getFont(
-                  currentFont,
-                  fontSize: currentFontSize.clamp(16, 40),
-                  color: dark ? Colors.white : Colors.black,
+              children: [
+                // Appearance
+                const _SectionHeader(title: 'Appearance'),
+                SwitchListTile(
+                  title: const Text('Dark Mode'),
+                  subtitle: const Text(
+                    'Dark background reduces glare for prompting',
+                  ),
+                  value: dark,
+                  onChanged: (value) =>
+                      Services.preferences.saveDarkMode(value),
+                  secondary: Icon(dark ? Icons.dark_mode : Icons.light_mode),
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
+                const Divider(),
 
-            // Scrolling
-            const _SectionHeader(title: 'Scrolling'),
-            ListTile(
-              leading: const Icon(Icons.speed),
-              title: const Text('Default Scroll Speed'),
-              subtitle: Text('${currentSpeed.round()} px/s'),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Slider(
-                value: currentSpeed.clamp(5, 100),
-                min: 5,
-                max: 100,
-                divisions: 19,
-                label: '${currentSpeed.round()}',
-                onChanged: (value) =>
-                    Services.preferences.saveScrollSpeed(value),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Google Drive
-            const _SectionHeader(title: 'Google Drive'),
-            if (signedIn)
-              ListTile(
-                leading: const Icon(Icons.cloud_done, color: Colors.green),
-                title: Text(
-                  Services.googleDrive.currentUserEmail ?? 'Signed In',
+                // Font family
+                ListTile(
+                  leading: const Icon(Icons.font_download),
+                  title: const Text('Font Family'),
+                  subtitle: Text(currentFont),
+                  onTap: () => _showFontPicker(context, currentFont),
                 ),
-                subtitle: const Text('Connected to Google Drive'),
-                trailing: TextButton(
-                  onPressed: () async {
-                    await Services.googleDrive.signOut();
+                const Divider(),
+
+                // Font size
+                ListTile(
+                  leading: const Icon(Icons.format_size),
+                  title: const Text('Default Font Size'),
+                  subtitle: Text('${currentFontSize.round()} pt'),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Slider(
+                    value: currentFontSize,
+                    min: 16,
+                    max: 80,
+                    divisions: 16,
+                    label: '${currentFontSize.round()}',
+                    onChanged: (value) =>
+                        Services.preferences.saveFontSize(value),
+                  ),
+                ),
+
+                // Preview
+                Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: dark ? Colors.black : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Theme.of(context).dividerColor),
+                  ),
+                  child: Text(
+                    'The quick brown fox jumps over the lazy dog.',
+                    style: GoogleFonts.getFont(
+                      currentFont,
+                      fontSize: currentFontSize.clamp(16, 40),
+                      color: dark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Scrolling
+                const _SectionHeader(title: 'Scrolling'),
+                ListTile(
+                  leading: const Icon(Icons.speed),
+                  title: const Text('Default Scroll Speed'),
+                  subtitle: Text('${currentSpeed.round()} px/s'),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Slider(
+                    value: currentSpeed.clamp(5, 100),
+                    min: 5,
+                    max: 100,
+                    divisions: 19,
+                    label: '${currentSpeed.round()}',
+                    onChanged: (value) =>
+                        Services.preferences.saveScrollSpeed(value),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Google Drive
+                const _SectionHeader(title: 'Google Drive'),
+                if (signedIn)
+                  ListTile(
+                    leading: const Icon(Icons.cloud_done, color: Colors.green),
+                    title: Text(
+                      Services.googleDrive.currentUserEmail ?? 'Signed In',
+                    ),
+                    subtitle: const Text('Connected to Google Drive'),
+                    trailing: TextButton(
+                      onPressed: () async {
+                        await Services.googleDrive.signOut();
+                      },
+                      child: const Text('Sign Out'),
+                    ),
+                  )
+                else
+                  ListTile(
+                    leading: const Icon(Icons.cloud_off),
+                    title: const Text('Not connected'),
+                    subtitle: const Text(
+                      'Sign in to browse Google Drive files',
+                    ),
+                    trailing: FilledButton(
+                      onPressed: () async {
+                        final success = await Services.googleDrive.signIn();
+                        if (!success && context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Google Sign-In failed'),
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text('Sign In'),
+                    ),
+                  ),
+                const SizedBox(height: 16),
+
+                // Data
+                const _SectionHeader(title: 'Data'),
+                ListTile(
+                  leading: const Icon(Icons.delete_outline),
+                  title: const Text('Clear Recent Files'),
+                  subtitle: Text('$recentCount files in history'),
+                  onTap: () {
+                    Services.preferences.clearRecentFiles();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Recent files cleared')),
+                    );
                   },
-                  child: const Text('Sign Out'),
                 ),
-              )
-            else
-              ListTile(
-                leading: const Icon(Icons.cloud_off),
-                title: const Text('Not connected'),
-                subtitle: const Text('Sign in to browse Google Drive files'),
-                trailing: FilledButton(
-                  onPressed: () async {
-                    final success = await Services.googleDrive.signIn();
-                    if (!success && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Google Sign-In failed')),
-                      );
-                    }
-                  },
-                  child: const Text('Sign In'),
-                ),
-              ),
-            const SizedBox(height: 16),
-
-            // Data
-            const _SectionHeader(title: 'Data'),
-            ListTile(
-              leading: const Icon(Icons.delete_outline),
-              title: const Text('Clear Recent Files'),
-              subtitle: Text(
-                '${recentFiles.watch(context).length} files in history',
-              ),
-              onTap: () {
-                Services.preferences.clearRecentFiles();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Recent files cleared')),
-                );
-              },
-            ),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );

@@ -30,8 +30,6 @@ void main() async {
   // Check Google Sign-In state silently
   await Services.googleDrive.checkSignedIn();
 
-  logMessage('FlowPrompt: Initialization complete');
-
   runApp(const FlowPromptApp());
 }
 
@@ -47,27 +45,31 @@ class _FlowPromptAppState extends State<FlowPromptApp> {
 
   @override
   Widget build(BuildContext context) {
-    final dark = isDarkMode.watch(context);
+    return SignalBuilder(
+      builder: (context) {
+        final dark = isDarkMode.value;
 
-    return MaterialApp.router(
-      title: 'Flow Prompt',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.indigo,
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.indigo,
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
-      themeMode: dark ? ThemeMode.dark : ThemeMode.light,
-      routerConfig: _appRouter.config(),
+        return MaterialApp.router(
+          title: 'Flow Prompt',
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.indigo,
+              brightness: Brightness.light,
+            ),
+            useMaterial3: true,
+          ),
+          darkTheme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.indigo,
+              brightness: Brightness.dark,
+            ),
+            useMaterial3: true,
+          ),
+          themeMode: dark ? ThemeMode.dark : ThemeMode.light,
+          routerConfig: _appRouter.config(),
+        );
+      },
     );
   }
 }

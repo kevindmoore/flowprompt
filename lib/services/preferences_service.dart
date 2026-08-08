@@ -32,7 +32,6 @@ class PreferencesService {
       }
     }
 
-    logMessage('PreferencesService: Settings loaded');
   }
 
   void saveScrollSpeed(double speed) {

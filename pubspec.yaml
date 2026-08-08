@@ -2,11 +2,11 @@ name: flowprompt
 description: "A script prompter app for tablets."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.2+4
 
 environment:
-  sdk: ^3.9.0
-  # sdk: ^3.10.7
+  sdk: '>=3.12.0 <4.0.0'
+  flutter: '>=3.44.0'
 
 dependencies:
   flutter:
@@ -17,26 +17,26 @@ dependencies:
     path: ../utilities
 
   # State management
-  signals: ^6.2.0
+  signals: ^7.1.0
 
   # Navigation
-  auto_route: ^9.3.0+1
+  auto_route: ^11.1.0
 
   # UI
-  google_fonts: ^6.1.0
+  google_fonts: ^8.1.0
   auto_size_text: ^3.0.0
   flutter_markdown: ^0.7.7+1
 
   # File handling
-  file_picker: ^8.1.7
+  file_picker: ^8.3.7
 
   # Google Drive
-  google_sign_in: ^6.2.2
-  googleapis: ^14.0.0
-  http: ^1.3.0
+  google_sign_in: ^6.3.0
+  googleapis: ^16.0.0
+  http: ^1.6.0
 
   # Persistence
-  shared_preferences: ^2.5.2
+  shared_preferences: ^2.5.5
 
   # Logging
   lumberdash: ^3.0.0
@@ -44,10 +44,11 @@ dependencies:
 
   # Utilities
   collection: ^1.19.1
-  wakelock_plus: ^1.2.11
-  cupertino_icons: ^1.0.8
-  syncfusion_flutter_pdfviewer: ^32.2.3
-  flutter_widget_from_html: ^0.17.1
+  wakelock_plus: ^1.5.2
+  cupertino_icons: ^1.0.9
+  syncfusion_flutter_pdfviewer: ^33.2.13
+  flutter_widget_from_html: ^0.17.2
+  speech_to_text: ^7.4.0
 
 dev_dependencies:
   flutter_test:
@@ -56,12 +57,12 @@ dev_dependencies:
   flutter_lints: ^6.0.0
 
   # Code generation
-  auto_route_generator: ^9.0.0
-  build_runner: ^2.4.15
+  auto_route_generator: ^10.6.0
+  build_runner: ^2.15.0
 
   # App icon
   flutter_launcher_icons: ^0.14.4
-  flutter_native_splash: ^2.3.1
+  flutter_native_splash: ^2.4.8
 
 flutter:
   uses-material-design: true
