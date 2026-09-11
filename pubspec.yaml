@@ -2,7 +2,7 @@ name: flowprompt
 description: "A script prompter app for tablets."
 publish_to: 'none'
 
-version: 1.0.2+4
+version: 1.0.3+5
 
 environment:
   sdk: '>=3.12.0 <4.0.0'
@@ -28,7 +28,7 @@ dependencies:
   flutter_markdown: ^0.7.7+1
 
   # File handling
-  file_picker: ^8.3.7
+  file_picker: ^10.3.10
 
   # Google Drive
   google_sign_in: ^6.3.0
@@ -81,4 +81,3 @@ flutter_native_splash:
   android_12:
     image: "assets/images/app_icon_splash.png"
     color: "#ffffff"
-

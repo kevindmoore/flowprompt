@@ -73,7 +73,7 @@ android {
             signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true // Enable code shrinking and obfuscation
             isShrinkResources = false // Disable resource shrinking
-            proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro")
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }
